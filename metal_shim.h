@@ -5,15 +5,15 @@
 extern "C" {
 #endif
 
-typedef void* MTLDeviceHandle;
-typedef void* MTLCommandQueueHandle;
-typedef void* MTLCommandBufferHandle;
-typedef void* MTLLibraryHandle;
-typedef void* MTLFunctionHandle;
-typedef void* MTLComputePipelineStateHandle;
-typedef void* MTLBufferHandle;
-typedef void* MTLComputeCommandEncoderHandle;
-typedef void* MTLSizeHandle;
+typedef struct MTLDeviceHandle MTLDeviceHandle;
+typedef struct MTLCommandQueueHandle MTLCommandQueueHandle;
+typedef struct MTLCommandBufferHandle MTLCommandBufferHandle;
+typedef struct MTLLibraryHandle MTLLibraryHandle;
+typedef struct MTLFunctionHandle MTLFunctionHandle;
+typedef struct MTLComputePipelineStateHandle MTLComputePipelineStateHandle;
+typedef struct MTLBufferHandle MTLBufferHandle;
+typedef struct MTLComputeCommandEncoderHandle MTLComputeCommandEncoderHandle;
+typedef struct MTLSizeHandle MTLSizeHandle;
 
 
 #define MTLResourceCPUCacheModeShift            0
@@ -54,39 +54,39 @@ enum {
     /*MTLResourceOptionCPUCacheModeWriteCombined API_DEPRECATED_WITH_REPLACEMENT("MTLResourceCPUCacheModeWriteCombined", macos(10.11, 13.0), ios(8.0, 16.0)) = MTLResourceCPUCacheModeWriteCombined,*/
 };
 
-MTLDeviceHandle mtl_create_system_default_device(void);
-void mtl_release_device(MTLDeviceHandle device);
+MTLDeviceHandle* mtl_create_system_default_device(void);
+void mtl_release_device(MTLDeviceHandle *device);
 
-MTLCommandQueueHandle mtl_new_command_queue(MTLDeviceHandle device);
-void mtl_release_command_queue(MTLCommandQueueHandle queue);
+MTLCommandQueueHandle* mtl_new_command_queue(MTLDeviceHandle *device);
+void mtl_release_command_queue(MTLCommandQueueHandle *queue);
 
-MTLLibraryHandle mtl_new_library_with_url(MTLDeviceHandle device, const char* url);
-void mtl_release_library(MTLLibraryHandle library);
+MTLLibraryHandle* mtl_new_library_with_url(MTLDeviceHandle *device, const char* url);
+void mtl_release_library(MTLLibraryHandle *library);
 
-MTLFunctionHandle mtl_new_function_with_name(MTLLibraryHandle library, const char* name);
-void mtl_release_function(MTLFunctionHandle function);
+MTLFunctionHandle* mtl_new_function_with_name(MTLLibraryHandle *library, const char* name);
+void mtl_release_function(MTLFunctionHandle *function);
 
-MTLComputePipelineStateHandle mtl_new_compute_pipeline_state_with_function(MTLDeviceHandle device, MTLFunctionHandle function);
-void mtl_release_compute_pipeline_state(MTLComputePipelineStateHandle pipelineState);
+MTLComputePipelineStateHandle *mtl_new_compute_pipeline_state_with_function(MTLDeviceHandle *device, MTLFunctionHandle *function);
+void mtl_release_compute_pipeline_state(MTLComputePipelineStateHandle *pipelineState);
 
-MTLBufferHandle mtl_new_buffer_with_length(MTLDeviceHandle device, unsigned int length, MTLResourceOptionsHandle options);
+MTLBufferHandle* mtl_new_buffer_with_length(MTLDeviceHandle *device, unsigned int length, MTLResourceOptionsHandle options);
 /// Returns the raw CPU‐side pointer for a shared MTLBuffer.
-void *mtl_buffer_get_contents(MTLBufferHandle buf);
+void* mtl_buffer_get_contents(MTLBufferHandle *buf);
 
 /// Returns the buffer’s length in bytes.
-size_t mtl_buffer_get_length(MTLBufferHandle buf);
-void mtl_release_buffer(MTLBufferHandle buffer);
+size_t mtl_buffer_get_length(MTLBufferHandle *buf);
+void mtl_release_buffer(MTLBufferHandle *buf);
 
-MTLCommandBufferHandle mtl_new_command_buffer(MTLCommandQueueHandle queue);
-void mtl_release_command_buffer(MTLCommandBufferHandle commandBuffer);
+MTLCommandBufferHandle *mtl_new_command_buffer(MTLCommandQueueHandle *queue);
+void mtl_release_command_buffer(MTLCommandBufferHandle *commandBuffer);
 
-MTLComputeCommandEncoderHandle mtl_new_compute_command_encoder(MTLCommandBufferHandle commandBuffer);
-void mtl_release_compute_command_encoder(MTLComputeCommandEncoderHandle encoder);
-void mtl_end_encoding(MTLComputeCommandEncoderHandle encoder);
+MTLComputeCommandEncoderHandle *mtl_new_compute_command_encoder(MTLCommandBufferHandle *commandBuffer);
+void mtl_release_compute_command_encoder(MTLComputeCommandEncoderHandle *encoder);
+void mtl_end_encoding(MTLComputeCommandEncoderHandle *encoder);
 
-void mtl_enc_set_compute_pipeline_state(MTLComputeCommandEncoderHandle encoder, MTLComputePipelineStateHandle pipelineState);
-void mtl_enc_set_buffer(MTLComputeCommandEncoderHandle encoder, MTLBufferHandle buffer,  unsigned int offset, unsigned int index);
-void mtl_enc_dispatch_threads(MTLComputeCommandEncoderHandle encoder, unsigned int threadgroupsPerGridWidth,
+void mtl_enc_set_compute_pipeline_state(MTLComputeCommandEncoderHandle *encoder, MTLComputePipelineStateHandle *pipelineState);
+void mtl_enc_set_buffer(MTLComputeCommandEncoderHandle *encoder, MTLBufferHandle *buffer,  unsigned int offset, unsigned int index);
+void mtl_enc_dispatch_threads(MTLComputeCommandEncoderHandle *encoder, unsigned int threadgroupsPerGridWidth,
 			      					      unsigned int threadgroupsPerGridHeight,
 								      unsigned int threadgroupsPerGridDepth,
 								      unsigned int threadsPerThreadgroupWidth,
@@ -95,8 +95,8 @@ void mtl_enc_dispatch_threads(MTLComputeCommandEncoderHandle encoder, unsigned i
 
 MTLSizeHandle mtl_size_make(unsigned int width, unsigned int height, unsigned int depth);
 
-void mtl_command_buffer_commit(MTLCommandBufferHandle commandBuffer);
-void mtl_command_buffer_wait_until_completed(MTLCommandBufferHandle commandBuffer);
+void mtl_command_buffer_commit(MTLCommandBufferHandle *commandBuffer);
+void mtl_command_buffer_wait_until_completed(MTLCommandBufferHandle *commandBuffer);
 #ifdef __cplusplus
 }
 #endif
