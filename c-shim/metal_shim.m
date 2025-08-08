@@ -419,3 +419,12 @@ void mtl_command_buffer_wait_until_completed(
     [commandBuffer->cmd waitUntilCompleted];
   }
 }
+
+unsigned int
+mtl_get_maxTotalThreadsPerThreadgroup(MTLComputePipelineStateHandle *pipeline) {
+  if (!pipeline->pipeline) {
+    NSLog(@"Invalid pipeline state");
+    return 0;
+  }
+  return pipeline->pipeline.maxTotalThreadsPerThreadgroup;
+}

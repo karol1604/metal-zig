@@ -97,6 +97,9 @@ MTLSizeHandle mtl_size_make(unsigned int width, unsigned int height, unsigned in
 
 void mtl_command_buffer_commit(MTLCommandBufferHandle *commandBuffer);
 void mtl_command_buffer_wait_until_completed(MTLCommandBufferHandle *commandBuffer);
+
+unsigned int mtl_get_maxTotalThreadsPerThreadgroup(MTLComputePipelineStateHandle *pipeline);
+
 #ifdef __cplusplus
 }
 #endif

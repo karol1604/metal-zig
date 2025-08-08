@@ -103,6 +103,10 @@ pub const ComputePipelineState = struct {
     pub fn deinit(self: *ComputePipelineState) void {
         c.mtl_release_compute_pipeline_state(self.handle);
     }
+
+    pub fn getMaxTotalThreadsPerThreadgroup(self: *ComputePipelineState) usize {
+        return c.mtl_get_maxTotalThreadsPerThreadgroup(self.handle);
+    }
 };
 
 pub const Buffer = struct {
@@ -113,12 +117,14 @@ pub const Buffer = struct {
         c.mtl_release_buffer(self.handle);
     }
 
+    /// Returns the buffer contents as a slice of bytes.
     pub fn getContents(self: *Buffer) ?[]u8 {
         const contents: [*]u8 = @ptrCast(c.mtl_buffer_get_contents(self.handle));
         // if (contents == null) return null;
         return contents[0..self.len];
     }
 
+    /// Returns the buffer contents as a slice of type `T`.
     pub fn getContentsAs(self: *Buffer, comptime T: type) ?[]T {
         const contents = self.getContents() orelse return null;
         return @alignCast(std.mem.bytesAsSlice(T, contents));
@@ -178,22 +184,23 @@ pub fn main() !void {
     var pipeline = try device.newComputePipelineStateWithFunction(&func);
     defer pipeline.deinit();
 
-    const input_len = 100_000_000;
-    var a_buf = try device.newBufferWithLength(input_len * @sizeOf(f32), 0);
+    const input_len = 10_000_000;
+    const output_len = input_len;
+
+    var a_buf = try device.newBufferWithLength(input_len * @sizeOf(i32), 0);
     defer a_buf.deinit();
-    var b_buf = try device.newBufferWithLength(input_len * @sizeOf(f32), 0);
+    var b_buf = try device.newBufferWithLength(input_len * @sizeOf(i32), 0);
     defer b_buf.deinit();
 
-    const a_ptr = a_buf.getContentsAs(f32) orelse return error.BufferContentsUnavailable;
-    const b_ptr = b_buf.getContentsAs(f32) orelse return error.BufferContentsUnavailable;
+    const a_ptr = a_buf.getContentsAs(i32) orelse return error.BufferContentsUnavailable;
+    const b_ptr = b_buf.getContentsAs(i32) orelse return error.BufferContentsUnavailable;
 
-    const output_len = 10_000_000;
-    var output_buffer = try device.newBufferWithLength(output_len * @sizeOf(f32), 0);
+    var output_buffer = try device.newBufferWithLength(output_len * @sizeOf(i32), 0);
     defer output_buffer.deinit();
 
     for (a_ptr, 0..input_len, b_ptr) |*a_val, i, *b_val| {
-        a_val.* = @floatFromInt(i);
-        b_val.* = @floatFromInt(input_len - i);
+        a_val.* = @intCast(i + 200);
+        b_val.* = @intCast(input_len);
     }
 
     var command_buffer = try q.newCommandBuffer();
@@ -214,6 +221,6 @@ pub fn main() !void {
     command_buffer.commit();
     command_buffer.waitUntilCompleted();
 
-    const res = output_buffer.getContentsAs(f32) orelse return error.BufferContentsUnavailable;
-    std.debug.print("Result: {d}\n", .{res[0]});
+    const res = output_buffer.getContentsAs(i32) orelse return error.BufferContentsUnavailable;
+    std.debug.print("Result: {any}\n", .{res[1231]});
 }
