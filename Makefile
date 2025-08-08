@@ -1,22 +1,57 @@
-# Makefile for libmetalshim.a
+# Directories
+SRC_DIR     := c-shim
+BUILD_DIR   := build-artifacts
+SHADER_DIR  := kernels
 
-SRC = metal_shim.m
-OBJ = $(SRC:.m=.o)
-LIB = libmetalshim.a
-CC = clang
-AR = ar
-CFLAGS = -c -fobjc-arc -fmodules
-ARFLAGS = rcs
+# Files
+SRC         := $(wildcard $(SRC_DIR)/*.m)
+OBJ         := $(patsubst $(SRC_DIR)/%.m,$(BUILD_DIR)/%.o,$(SRC))
+LIB         := $(BUILD_DIR)/libmetalshim.a
 
-all: $(LIB)
+# Tools
+CC          := clang
+AR          := ar
+CFLAGS      := -c -fobjc-arc -fmodules -I$(SRC_DIR)
+ARFLAGS     := rcs
 
-$(OBJ): $(SRC)
+# Metal shader compilation
+METAL       := xcrun -sdk macosx metal
+METALLIB    := xcrun -sdk macosx metallib
+SHADERS     := $(wildcard $(SHADER_DIR)/*.metal)
+AIR_FILES   := $(patsubst $(SHADER_DIR)/%.metal,$(BUILD_DIR)/%.air,$(SHADERS))
+METALLIBS   := $(patsubst $(SHADER_DIR)/%.metal,$(BUILD_DIR)/%.metallib,$(SHADERS))
+
+# Default target
+all: $(LIB) $(METALLIBS)
+
+kernels: $(METALLIBS)
+
+# Compile Objective-C to .o
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.m | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $< -o $@
 
+# Archive into static library
 $(LIB): $(OBJ)
 	$(AR) $(ARFLAGS) $@ $^
 
-clean:
-	rm -f $(OBJ) $(LIB)
+# Compile .metal → .air
+$(BUILD_DIR)/%.air: $(SHADER_DIR)/%.metal | $(BUILD_DIR)
+	$(METAL) -o $@ -c $<
 
-.PHONY: all clean
+# Compile .air → .metallib
+$(BUILD_DIR)/%.metallib: $(BUILD_DIR)/%.air
+	$(METALLIB) $< -o $@
+
+# Ensure build dir exists
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)
+
+# Clean
+clean:
+	rm -rf $(BUILD_DIR)
+
+clean-kernels:
+	rm -f $(BUILD_DIR)/*.air $(BUILD_DIR)/*.metallib
+
+.PHONY: all kernels clean-kernels clean
+

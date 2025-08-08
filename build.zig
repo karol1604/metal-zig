@@ -37,8 +37,8 @@ pub fn build(b: *std.Build) void {
     exe.linkFramework("Metal");
     exe.linkFramework("Foundation");
     exe.linkFramework("MetalKit");
-    exe.addIncludePath(b.path("."));
-    exe.addObjectFile(b.path("libmetalshim.a"));
+    exe.addIncludePath(b.path("c-shim"));
+    exe.addObjectFile(b.path("build-artifacts/libmetalshim.a"));
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
