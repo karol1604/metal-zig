@@ -3,6 +3,16 @@ const c = @cImport({
     @cInclude("metal_shim.h");
 });
 
+pub const MTLSize = struct {
+    width: usize,
+    height: usize,
+    depth: usize,
+
+    pub fn init(width: usize, height: usize, depth: usize) MTLSize {
+        return MTLSize{ .width = width, .height = height, .depth = depth };
+    }
+};
+
 pub const ComputeCommandEncoder = struct {
     handle: *c.MTLComputeCommandEncoderHandle,
     pub fn deinit(self: *ComputeCommandEncoder) void {
@@ -153,99 +163,57 @@ pub const Device = struct {
 };
 
 pub fn main() !void {
-    // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
-    std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
-    // const device = c.mtl_create_system_default_device();
     var device = try Device.init();
     defer device.deinit();
 
-    // const q = c.mtl_new_command_queue(device);
     var q = try device.newCommandQueue();
     defer q.deinit();
 
-    // const lib = c.mtl_new_library_with_url(device, "test.metallib");
     var lib = try device.newLibraryWithURL("build-artifacts/add_arrays.metallib");
     defer lib.deinit();
 
-    // const func = c.mtl_new_function_with_name(lib, "add_arrays");
     var func = try lib.newFunctionWithName("add_arrays");
     defer func.deinit();
 
-    // const pipeline = c.mtl_new_compute_pipeline_state_with_function(device, func);
     var pipeline = try device.newComputePipelineStateWithFunction(&func);
     defer pipeline.deinit();
 
-    const input_len = 10_000_000;
+    const input_len = 100_000_000;
     var a_buf = try device.newBufferWithLength(input_len * @sizeOf(f32), 0);
     defer a_buf.deinit();
     var b_buf = try device.newBufferWithLength(input_len * @sizeOf(f32), 0);
     defer b_buf.deinit();
-    // const a_buf = c.mtl_new_buffer_with_length(device, input_len * @sizeOf(f32), 0);
-    // defer c.mtl_release_buffer(a_buf);
-    // const b_buf = c.mtl_new_buffer_with_length(device, input_len * @sizeOf(f32), 0);
-    // defer c.mtl_release_buffer(b_buf);
 
-    // const a_ptr: [*]f32 = @ptrCast(@alignCast(c.mtl_buffer_get_contents(a_buf)));
-    // const b_ptr: [*]f32 = @ptrCast(@alignCast(c.mtl_buffer_get_contents(b_buf)));
     const a_ptr = a_buf.getContentsAs(f32) orelse return error.BufferContentsUnavailable;
     const b_ptr = b_buf.getContentsAs(f32) orelse return error.BufferContentsUnavailable;
 
     const output_len = 10_000_000;
     var output_buffer = try device.newBufferWithLength(output_len * @sizeOf(f32), 0);
     defer output_buffer.deinit();
-    // const output_buffer = c.mtl_new_buffer_with_length(device, output_len * @sizeOf(f32), 0);
-    // defer c.mtl_release_buffer(output_buffer);
-    // const output_slice = output_buffer[0..output_len];
 
     for (a_ptr, 0..input_len, b_ptr) |*a_val, i, *b_val| {
         a_val.* = @floatFromInt(i);
         b_val.* = @floatFromInt(input_len - i);
     }
 
-    // const command_buffer = c.mtl_new_command_buffer(q);
-    // defer c.mtl_release_command_buffer(command_buffer);
     var command_buffer = try q.newCommandBuffer();
     defer command_buffer.deinit();
 
-    // const encoder = c.mtl_new_compute_command_encoder(command_buffer);
-    // defer c.mtl_release_compute_command_encoder(encoder);
     var encoder = try command_buffer.newComputeCommandEncoder();
     defer encoder.deinit();
 
-    // c.mtl_enc_set_compute_pipeline_state(encoder, pipeline);
     encoder.setComputePipelineState(&pipeline);
 
-    // c.mtl_enc_set_buffer(encoder, a_buf, 0, 0);
-    // c.mtl_enc_set_buffer(encoder, b_buf, 0, 1);
-    // c.mtl_enc_set_buffer(encoder, output_buffer, 0, 2);
     encoder.setBuffer(&a_buf, 0, 0);
     encoder.setBuffer(&b_buf, 0, 1);
     encoder.setBuffer(&output_buffer, 0, 2);
 
-    // c.mtl_enc_dispatch_threads(encoder, input_len, 1, 1, 1000, 1, 1);
-    // c.mtl_end_encoding(encoder);
     encoder.dispatchThreads(input_len, 1, 1, 1000, 1, 1);
     encoder.endEncoding();
 
-    // c.mtl_command_buffer_commit(command_buffer);
-    // c.mtl_command_buffer_wait_until_completed(command_buffer);
     command_buffer.commit();
     command_buffer.waitUntilCompleted();
 
-    // std.debug.print("Device: {any}= Q: {any}, lib: {any}, func: {any}, pipeline: {any}, a_buf: {any}, b_buf: {any}, out_buf: {any}, command_buf: {any}, encoder: {any}\n", .{
-    //     device,
-    //     q,
-    //     lib,
-    //     func,
-    //     pipeline,
-    //     a_buf,
-    //     b_buf,
-    //     output_buffer,
-    //     command_buffer,
-    //     encoder,
-    // });
-
-    // const res: [*]f32 = @ptrCast(@alignCast(c.mtl_buffer_get_contents(output_buffer.handle)));
     const res = output_buffer.getContentsAs(f32) orelse return error.BufferContentsUnavailable;
     std.debug.print("Result: {d}\n", .{res[0]});
 }
