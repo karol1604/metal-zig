@@ -1,9 +1,8 @@
-kernel void add_arrays(device const float* inA [[buffer(0)]],
-                       device const float* inB [[buffer(1)]],
-                       device float* result [[buffer(2)]],
+kernel void add_arrays(device const uint* inA [[buffer(0)]],
+                       device const uint* inB [[buffer(1)]],
+					   constant uint& offset [[buffer(2)]],
+                       device uint* result [[buffer(3)]],
                        uint index [[thread_position_in_grid]])
 {
-    // the for-loop is replaced with a collection of threads, each of which
-    // calls this function.
-    result[index] = inA[index] + inB[index];
+    result[index] = inA[index] + inB[index] + offset;
 }

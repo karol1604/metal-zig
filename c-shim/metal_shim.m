@@ -65,7 +65,6 @@ void mtl_release_command_queue(MTLCommandQueueHandle *h) {
 
 MTLLibraryHandle *mtl_new_library_with_url(MTLDeviceHandle *device,
                                            const char *url) {
-
   @autoreleasepool {
     NSURL *libraryURL =
         [NSURL URLWithString:[NSString stringWithUTF8String:url]];
@@ -101,7 +100,6 @@ void mtl_release_library(MTLLibraryHandle *h) {
 
 MTLFunctionHandle *mtl_new_function_with_name(MTLLibraryHandle *library,
                                               const char *name) {
-
   @autoreleasepool {
     if (!library || !name)
       return NULL;
@@ -131,7 +129,6 @@ void mtl_release_function(MTLFunctionHandle *function) {
 MTLComputePipelineStateHandle *
 mtl_new_compute_pipeline_state_with_function(MTLDeviceHandle *device,
                                              MTLFunctionHandle *function) {
-
   @autoreleasepool {
     if (!device || !function) {
       NSLog(@"Invalid device or function");
@@ -165,7 +162,6 @@ void mtl_release_compute_pipeline_state(
 MTLBufferHandle *mtl_new_buffer_with_length(MTLDeviceHandle *device,
                                             unsigned int length,
                                             MTLResourceOptionsHandle options) {
-
   @autoreleasepool {
     if (!device || length == 0) {
       NSLog(@"Invalid device or length");
@@ -237,81 +233,6 @@ void mtl_release_compute_command_encoder(
   }
 }
 
-void mtl_test_set() {
-  @autoreleasepool {
-    // 1) Create device & queue
-    id<MTLDevice> device = MTLCopyAllDevices().firstObject;
-    id<MTLCommandQueue> queue = [device newCommandQueue];
-
-    // 2) Load your metallib by explicit path
-    NSError *error = nil;
-    // Adjust this path as needed (relative or absolute)
-    NSString *libPath = @"./test.metallib";
-    NSURL *libURL = [NSURL fileURLWithPath:libPath];
-    id<MTLLibrary> lib = [device newLibraryWithURL:libURL error:&error];
-    if (!lib) {
-      NSLog(@"✗ Failed to load metallib '%@': %@", libPath, error);
-    }
-
-    // 3) Grab your kernel
-    id<MTLFunction> fn = [lib newFunctionWithName:@"add_arrays"];
-    if (!fn) {
-      NSLog(@"✗ 'add_array' not found in %@", libPath);
-    }
-
-    // 4) Create compute pipeline
-    id<MTLComputePipelineState> pso =
-        [device newComputePipelineStateWithFunction:fn error:&error];
-    if (!pso) {
-      NSLog(@"✗ Failed to create PSO: %@", error);
-    }
-
-    // 5) Prepare data
-    const NSUInteger count = 1 << 20;
-    size_t byteLen = count * sizeof(float);
-    float *a = malloc(byteLen), *b = malloc(byteLen);
-    for (NSUInteger i = 0; i < count; i++) {
-      a[i] = (float)i;
-      b[i] = (float)(count - i);
-    }
-    id<MTLBuffer> bufA =
-        [device newBufferWithBytes:a
-                            length:byteLen
-                           options:MTLResourceStorageModeShared];
-    id<MTLBuffer> bufB =
-        [device newBufferWithBytes:b
-                            length:byteLen
-                           options:MTLResourceStorageModeShared];
-    id<MTLBuffer> bufOut =
-        [device newBufferWithLength:byteLen
-                            options:MTLResourceStorageModeShared];
-
-    // 6) Encode & dispatch
-    id<MTLCommandBuffer> cmdBuf = [queue commandBuffer];
-    id<MTLComputeCommandEncoder> enc = [cmdBuf computeCommandEncoder];
-    [enc setComputePipelineState:pso];
-    [enc setBuffer:bufA offset:0 atIndex:0];
-    [enc setBuffer:bufB offset:0 atIndex:1];
-    [enc setBuffer:bufOut offset:0 atIndex:2];
-    MTLSize grid = MTLSizeMake(count, 1, 1);
-    MTLSize tg =
-        MTLSizeMake(MIN(pso.maxTotalThreadsPerThreadgroup, count), 1, 1);
-    [enc dispatchThreads:grid threadsPerThreadgroup:tg];
-    [enc endEncoding];
-
-    // 7) Run & wait
-    [cmdBuf commit];
-    [cmdBuf waitUntilCompleted];
-
-    // 8) Read back
-    float *result = bufOut.contents;
-    NSLog(@"✓ result[0]=%f, result[last]=%f", result[0], result[count - 1]);
-
-    free(a);
-    free(b);
-  }
-}
-
 void mtl_end_encoding(MTLComputeCommandEncoderHandle *encoder) {
   if (!encoder->enc) {
     NSLog(@"Invalid compute command encoder");
@@ -324,7 +245,6 @@ void mtl_enc_set_compute_pipeline_state(
     MTLComputeCommandEncoderHandle *encoder,
     MTLComputePipelineStateHandle *pipelineState) {
   @autoreleasepool {
-
     if (!encoder->enc || !pipelineState->pipeline) {
       NSLog(@"Invalid encoder or pipeline state");
       return;
@@ -344,6 +264,18 @@ void mtl_enc_set_buffer(MTLComputeCommandEncoderHandle *encoder,
     }
 
     [encoder->enc setBuffer:buffer->buffer offset:offset atIndex:index];
+  }
+}
+
+void mtl_enc_set_bytes(MTLComputeCommandEncoderHandle *encoder,
+                       unsigned int index, size_t length, const void *bytes) {
+  @autoreleasepool {
+    if (!encoder->enc || !bytes || length == 0) {
+      NSLog(@"Invalid encoder, bytes, or length");
+      return;
+    }
+
+    [encoder->enc setBytes:bytes length:length atIndex:index];
   }
 }
 
@@ -379,7 +311,6 @@ void mtl_enc_dispatch_threads(MTLComputeCommandEncoderHandle *encoder,
                               unsigned int threadsPerThreadgroupHeight,
                               unsigned int threadsPerThreadgroupDepth) {
   @autoreleasepool {
-
     if (!encoder) {
       NSLog(@"Invalid compute command encoder");
       return;
@@ -398,7 +329,6 @@ void mtl_enc_dispatch_threads(MTLComputeCommandEncoderHandle *encoder,
 
 void mtl_command_buffer_commit(MTLCommandBufferHandle *commandBuffer) {
   @autoreleasepool {
-
     if (!commandBuffer) {
       NSLog(@"Invalid command buffer");
       return;

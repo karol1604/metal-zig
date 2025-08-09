@@ -27,6 +27,10 @@ pub const ComputeCommandEncoder = struct {
         c.mtl_enc_set_buffer(self.handle, buffer.handle, @intCast(offset), @intCast(index));
     }
 
+    pub fn setBytes(self: *ComputeCommandEncoder, bytes: []const u8, index: u32) void {
+        c.mtl_enc_set_bytes(self.handle, @intCast(index), @intCast(bytes.len), @ptrCast(bytes.ptr));
+    }
+
     pub fn dispatchThreads(self: *ComputeCommandEncoder, threadsPerGridX: usize, threadsPerGridY: usize, threadsPerGridZ: usize, threadsPerThreadgroupX: usize, threadsPerThreadgroupY: usize, threadsPerThreadgroupZ: usize) void {
         c.mtl_enc_dispatch_threads(
             self.handle,
@@ -187,20 +191,20 @@ pub fn main() !void {
     const input_len = 10_000_000;
     const output_len = input_len;
 
-    var a_buf = try device.newBufferWithLength(input_len * @sizeOf(i32), 0);
+    var a_buf = try device.newBufferWithLength(input_len * @sizeOf(u32), 0);
     defer a_buf.deinit();
-    var b_buf = try device.newBufferWithLength(input_len * @sizeOf(i32), 0);
+    var b_buf = try device.newBufferWithLength(input_len * @sizeOf(u32), 0);
     defer b_buf.deinit();
 
-    const a_ptr = a_buf.getContentsAs(i32) orelse return error.BufferContentsUnavailable;
-    const b_ptr = b_buf.getContentsAs(i32) orelse return error.BufferContentsUnavailable;
+    const a_slice = a_buf.getContentsAs(u32) orelse return error.BufferContentsUnavailable;
+    const b_slice = b_buf.getContentsAs(u32) orelse return error.BufferContentsUnavailable;
 
-    var output_buffer = try device.newBufferWithLength(output_len * @sizeOf(i32), 0);
+    var output_buffer = try device.newBufferWithLength(output_len * @sizeOf(u32), 0);
     defer output_buffer.deinit();
 
-    for (a_ptr, 0..input_len, b_ptr) |*a_val, i, *b_val| {
-        a_val.* = @intCast(i + 200);
-        b_val.* = @intCast(input_len);
+    for (a_slice, 0..input_len, b_slice) |*a_val, i, *b_val| {
+        a_val.* = @intCast(i);
+        b_val.* = @intCast(input_len - i);
     }
 
     var command_buffer = try q.newCommandBuffer();
@@ -211,9 +215,11 @@ pub fn main() !void {
 
     encoder.setComputePipelineState(&pipeline);
 
+    const offset: u32 = 69;
     encoder.setBuffer(&a_buf, 0, 0);
     encoder.setBuffer(&b_buf, 0, 1);
-    encoder.setBuffer(&output_buffer, 0, 2);
+    encoder.setBytes(std.mem.asBytes(&offset), 2);
+    encoder.setBuffer(&output_buffer, 0, 3);
 
     encoder.dispatchThreads(input_len, 1, 1, 1000, 1, 1);
     encoder.endEncoding();
@@ -221,6 +227,6 @@ pub fn main() !void {
     command_buffer.commit();
     command_buffer.waitUntilCompleted();
 
-    const res = output_buffer.getContentsAs(i32) orelse return error.BufferContentsUnavailable;
-    std.debug.print("Result: {any}\n", .{res[1231]});
+    const res = output_buffer.getContentsAs(u32) orelse return error.BufferContentsUnavailable;
+    std.debug.print("Result: {any}\n", .{res[0]});
 }
