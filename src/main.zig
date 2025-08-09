@@ -1,9 +1,15 @@
 const std = @import("std");
-
 const metalzig = @import("metalzig");
 
 pub fn main() !void {
-    var device = try metalzig.Device.init();
+    const alloc = std.heap.page_allocator;
+    const devices = try metalzig.Device.copyAllDevices(alloc);
+
+    for (devices, 0..) |device, i| {
+        std.debug.print("Device {d}: {s}\n", .{ i, device.name() });
+    }
+    // var device = try metalzig.Device.systemDefault();
+    var device = devices[0];
     defer device.deinit();
 
     var q = try device.newCommandQueue();

@@ -14,6 +14,7 @@ typedef struct MTLComputePipelineStateHandle MTLComputePipelineStateHandle;
 typedef struct MTLBufferHandle MTLBufferHandle;
 typedef struct MTLComputeCommandEncoderHandle MTLComputeCommandEncoderHandle;
 typedef struct MTLSizeHandle MTLSizeHandle;
+typedef struct MTLDeviceList MTLDeviceList;
 
 #define MTLResourceCPUCacheModeShift 0
 #define MTLResourceCPUCacheModeMask (0xfUL << MTLResourceCPUCacheModeShift)
@@ -67,6 +68,11 @@ enum {
 
 MTLDeviceHandle* mtl_create_system_default_device(void);
 void mtl_release_device(MTLDeviceHandle* device);
+
+MTLDeviceHandle* mtl_get_device_at_index(size_t index);
+size_t mtl_get_device_list_size(void);
+
+const char* mtl_get_device_name(MTLDeviceHandle* device);
 
 MTLCommandQueueHandle* mtl_new_command_queue(MTLDeviceHandle* device);
 void mtl_release_command_queue(MTLCommandQueueHandle* queue);

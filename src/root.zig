@@ -137,10 +137,29 @@ pub const Buffer = struct {
 
 pub const Device = struct {
     handle: *c.MTLDeviceHandle,
-    pub fn init() !Device {
+    pub fn systemDefault() !Device {
         const device = c.mtl_create_system_default_device();
         if (device == null) return error.NoDevice;
         return Device{ .handle = device.? };
+    }
+
+    pub fn copyAllDevices(alloc: std.mem.Allocator) ![]Device {
+        const deviceCount = c.mtl_get_device_list_size();
+        if (deviceCount == 0) return error.NoDevicesAvailable;
+        var devices = std.ArrayList(Device).init(alloc);
+        defer devices.deinit();
+
+        for (0..deviceCount) |i| {
+            const device = c.mtl_get_device_at_index(i);
+            if (device == null) continue; // Skip null devices
+            try devices.append(Device{ .handle = device.? });
+        }
+
+        return devices.toOwnedSlice();
+    }
+
+    pub fn name(self: *const Device) []const u8 {
+        return std.mem.span(c.mtl_get_device_name(self.handle));
     }
 
     pub fn deinit(self: *Device) void {
