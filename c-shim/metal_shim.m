@@ -30,12 +30,12 @@ struct MTLSizeHandle {
   MTLSize size;
 };
 
-#define BRIDGE_RETAIN(obj) (__bridge_retained void *)(obj)
+#define BRIDGE_RETAIN(obj) (__bridge_retained void*)(obj)
 #define BRIDGE_TRANSFER(ptr) (__bridge_transfer id)(ptr)
 
 // TODO: fix this to do the right thing
-MTLDeviceHandle *mtl_create_system_default_device(void) {
-  MTLDeviceHandle *handle = malloc(sizeof(*handle));
+MTLDeviceHandle* mtl_create_system_default_device(void) {
+  MTLDeviceHandle* handle = malloc(sizeof(*handle));
   handle->device = MTLCopyAllDevices().firstObject;
   if (!handle->device) {
     NSLog(@"Failed to create system default device");
@@ -45,31 +45,31 @@ MTLDeviceHandle *mtl_create_system_default_device(void) {
   return handle;
 }
 
-void mtl_release_device(MTLDeviceHandle *h) {
+void mtl_release_device(MTLDeviceHandle* h) {
   if (h) {
     free(h);
   }
 }
 
-MTLCommandQueueHandle *mtl_new_command_queue(MTLDeviceHandle *device) {
-  MTLCommandQueueHandle *handle = malloc(sizeof(*handle));
+MTLCommandQueueHandle* mtl_new_command_queue(MTLDeviceHandle* device) {
+  MTLCommandQueueHandle* handle = malloc(sizeof(*handle));
   handle->queue = [device->device newCommandQueue];
   return handle;
 }
 
-void mtl_release_command_queue(MTLCommandQueueHandle *h) {
+void mtl_release_command_queue(MTLCommandQueueHandle* h) {
   if (h) {
     free(h);
   }
 }
 
-MTLLibraryHandle *mtl_new_library_with_url(MTLDeviceHandle *device,
-                                           const char *url) {
+MTLLibraryHandle* mtl_new_library_with_url(MTLDeviceHandle* device,
+                                           const char* url) {
   @autoreleasepool {
-    NSURL *libraryURL =
+    NSURL* libraryURL =
         [NSURL URLWithString:[NSString stringWithUTF8String:url]];
 
-    NSError *error = nil;
+    NSError* error = nil;
     id<MTLLibrary> library = [device->device newLibraryWithURL:libraryURL
                                                          error:&error];
     if (!library) {
@@ -78,7 +78,7 @@ MTLLibraryHandle *mtl_new_library_with_url(MTLDeviceHandle *device,
       return NULL;
     }
 
-    MTLLibraryHandle *h = malloc(sizeof(*h));
+    MTLLibraryHandle* h = malloc(sizeof(*h));
     h->library = library;
 
     if (error) {
@@ -92,18 +92,18 @@ MTLLibraryHandle *mtl_new_library_with_url(MTLDeviceHandle *device,
   }
 }
 
-void mtl_release_library(MTLLibraryHandle *h) {
+void mtl_release_library(MTLLibraryHandle* h) {
   if (h) {
     free(h);
   }
 }
 
-MTLFunctionHandle *mtl_new_function_with_name(MTLLibraryHandle *library,
-                                              const char *name) {
+MTLFunctionHandle* mtl_new_function_with_name(MTLLibraryHandle* library,
+                                              const char* name) {
   @autoreleasepool {
     if (!library || !name)
       return NULL;
-    NSString *functionName = [NSString stringWithUTF8String:name];
+    NSString* functionName = [NSString stringWithUTF8String:name];
 
     id<MTLFunction> function =
         [library->library newFunctionWithName:functionName];
@@ -113,29 +113,29 @@ MTLFunctionHandle *mtl_new_function_with_name(MTLLibraryHandle *library,
       return NULL;
     }
 
-    MTLFunctionHandle *handle = malloc(sizeof(*handle));
+    MTLFunctionHandle* handle = malloc(sizeof(*handle));
     handle->function = function;
 
     return handle;
   }
 }
 
-void mtl_release_function(MTLFunctionHandle *function) {
+void mtl_release_function(MTLFunctionHandle* function) {
   if (function) {
     free(function);
   }
 }
 
-MTLComputePipelineStateHandle *
-mtl_new_compute_pipeline_state_with_function(MTLDeviceHandle *device,
-                                             MTLFunctionHandle *function) {
+MTLComputePipelineStateHandle* mtl_new_compute_pipeline_state_with_function(
+    MTLDeviceHandle* device,
+    MTLFunctionHandle* function) {
   @autoreleasepool {
     if (!device || !function) {
       NSLog(@"Invalid device or function");
       return NULL;
     }
 
-    NSError *error = nil;
+    NSError* error = nil;
     id<MTLComputePipelineState> pipelineState =
         [device->device newComputePipelineStateWithFunction:function->function
                                                       error:&error];
@@ -145,7 +145,7 @@ mtl_new_compute_pipeline_state_with_function(MTLDeviceHandle *device,
       return NULL;
     }
 
-    MTLComputePipelineStateHandle *h = malloc(sizeof(*h));
+    MTLComputePipelineStateHandle* h = malloc(sizeof(*h));
     h->pipeline = pipelineState;
 
     return h;
@@ -153,13 +153,13 @@ mtl_new_compute_pipeline_state_with_function(MTLDeviceHandle *device,
 }
 
 void mtl_release_compute_pipeline_state(
-    MTLComputePipelineStateHandle *pipelineState) {
+    MTLComputePipelineStateHandle* pipelineState) {
   if (pipelineState) {
     free(pipelineState);
   }
 }
 
-MTLBufferHandle *mtl_new_buffer_with_length(MTLDeviceHandle *device,
+MTLBufferHandle* mtl_new_buffer_with_length(MTLDeviceHandle* device,
                                             unsigned int length,
                                             MTLResourceOptionsHandle options) {
   @autoreleasepool {
@@ -176,13 +176,13 @@ MTLBufferHandle *mtl_new_buffer_with_length(MTLDeviceHandle *device,
       return NULL;
     }
 
-    MTLBufferHandle *h = malloc(sizeof(*h));
+    MTLBufferHandle* h = malloc(sizeof(*h));
     h->buffer = buffer;
     return h;
   }
 }
 
-MTLCommandBufferHandle *mtl_new_command_buffer(MTLCommandQueueHandle *queue) {
+MTLCommandBufferHandle* mtl_new_command_buffer(MTLCommandQueueHandle* queue) {
   @autoreleasepool {
     if (!queue) {
       NSLog(@"Invalid command queue");
@@ -194,20 +194,20 @@ MTLCommandBufferHandle *mtl_new_command_buffer(MTLCommandQueueHandle *queue) {
       return NULL;
     }
 
-    MTLCommandBufferHandle *h = malloc(sizeof(*h));
+    MTLCommandBufferHandle* h = malloc(sizeof(*h));
     h->cmd = commandBuffer;
     return h;
   }
 }
 
-void mtl_release_command_buffer(MTLCommandBufferHandle *commandBuffer) {
+void mtl_release_command_buffer(MTLCommandBufferHandle* commandBuffer) {
   if (commandBuffer) {
     free(commandBuffer);
   }
 }
 
-MTLComputeCommandEncoderHandle *
-mtl_new_compute_command_encoder(MTLCommandBufferHandle *commandBuffer) {
+MTLComputeCommandEncoderHandle* mtl_new_compute_command_encoder(
+    MTLCommandBufferHandle* commandBuffer) {
   @autoreleasepool {
     if (!commandBuffer) {
       NSLog(@"Invalid command buffer");
@@ -221,19 +221,19 @@ mtl_new_compute_command_encoder(MTLCommandBufferHandle *commandBuffer) {
       return NULL;
     }
 
-    MTLComputeCommandEncoderHandle *h = malloc(sizeof(*h));
+    MTLComputeCommandEncoderHandle* h = malloc(sizeof(*h));
     h->enc = computeEncoder;
     return h;
   }
 }
 void mtl_release_compute_command_encoder(
-    MTLComputeCommandEncoderHandle *encoder) {
+    MTLComputeCommandEncoderHandle* encoder) {
   if (encoder) {
     free(encoder);
   }
 }
 
-void mtl_end_encoding(MTLComputeCommandEncoderHandle *encoder) {
+void mtl_end_encoding(MTLComputeCommandEncoderHandle* encoder) {
   if (!encoder->enc) {
     NSLog(@"Invalid compute command encoder");
     return;
@@ -242,8 +242,8 @@ void mtl_end_encoding(MTLComputeCommandEncoderHandle *encoder) {
 }
 
 void mtl_enc_set_compute_pipeline_state(
-    MTLComputeCommandEncoderHandle *encoder,
-    MTLComputePipelineStateHandle *pipelineState) {
+    MTLComputeCommandEncoderHandle* encoder,
+    MTLComputePipelineStateHandle* pipelineState) {
   @autoreleasepool {
     if (!encoder->enc || !pipelineState->pipeline) {
       NSLog(@"Invalid encoder or pipeline state");
@@ -254,8 +254,9 @@ void mtl_enc_set_compute_pipeline_state(
   }
 }
 
-void mtl_enc_set_buffer(MTLComputeCommandEncoderHandle *encoder,
-                        MTLBufferHandle *buffer, unsigned int offset,
+void mtl_enc_set_buffer(MTLComputeCommandEncoderHandle* encoder,
+                        MTLBufferHandle* buffer,
+                        unsigned int offset,
                         unsigned int index) {
   @autoreleasepool {
     if (!encoder->enc || !buffer->buffer) {
@@ -267,8 +268,10 @@ void mtl_enc_set_buffer(MTLComputeCommandEncoderHandle *encoder,
   }
 }
 
-void mtl_enc_set_bytes(MTLComputeCommandEncoderHandle *encoder,
-                       unsigned int index, size_t length, const void *bytes) {
+void mtl_enc_set_bytes(MTLComputeCommandEncoderHandle* encoder,
+                       unsigned int index,
+                       size_t length,
+                       const void* bytes) {
   @autoreleasepool {
     if (!encoder->enc || !bytes || length == 0) {
       NSLog(@"Invalid encoder, bytes, or length");
@@ -279,15 +282,15 @@ void mtl_enc_set_bytes(MTLComputeCommandEncoderHandle *encoder,
   }
 }
 
-void *mtl_buffer_get_contents(MTLBufferHandle *bufHandle) {
+void* mtl_buffer_get_contents(MTLBufferHandle* bufHandle) {
   return bufHandle ? [bufHandle->buffer contents] : NULL;
 }
 
-size_t mtl_buffer_get_length(MTLBufferHandle *bufHandle) {
+size_t mtl_buffer_get_length(MTLBufferHandle* bufHandle) {
   return bufHandle ? [bufHandle->buffer length] : 0;
 }
 
-void mtl_release_buffer(MTLBufferHandle *bufHandle) {
+void mtl_release_buffer(MTLBufferHandle* bufHandle) {
   if (bufHandle) {
     free(bufHandle);
   }
@@ -303,7 +306,7 @@ void mtl_release_buffer(MTLBufferHandle *bufHandle) {
 //  }
 //}
 
-void mtl_enc_dispatch_threads(MTLComputeCommandEncoderHandle *encoder,
+void mtl_enc_dispatch_threads(MTLComputeCommandEncoderHandle* encoder,
                               unsigned int threadgroupsPerGridWidth,
                               unsigned int threadgroupsPerGridHeight,
                               unsigned int threadgroupsPerGridDepth,
@@ -327,7 +330,7 @@ void mtl_enc_dispatch_threads(MTLComputeCommandEncoderHandle *encoder,
   }
 }
 
-void mtl_command_buffer_commit(MTLCommandBufferHandle *commandBuffer) {
+void mtl_command_buffer_commit(MTLCommandBufferHandle* commandBuffer) {
   @autoreleasepool {
     if (!commandBuffer) {
       NSLog(@"Invalid command buffer");
@@ -339,7 +342,7 @@ void mtl_command_buffer_commit(MTLCommandBufferHandle *commandBuffer) {
 }
 
 void mtl_command_buffer_wait_until_completed(
-    MTLCommandBufferHandle *commandBuffer) {
+    MTLCommandBufferHandle* commandBuffer) {
   @autoreleasepool {
     if (!commandBuffer) {
       NSLog(@"Invalid command buffer");
@@ -350,8 +353,8 @@ void mtl_command_buffer_wait_until_completed(
   }
 }
 
-unsigned int
-mtl_get_maxTotalThreadsPerThreadgroup(MTLComputePipelineStateHandle *pipeline) {
+unsigned int mtl_get_maxTotalThreadsPerThreadgroup(
+    MTLComputePipelineStateHandle* pipeline) {
   if (!pipeline->pipeline) {
     NSLog(@"Invalid pipeline state");
     return 0;

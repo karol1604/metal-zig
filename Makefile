@@ -5,11 +5,13 @@ SHADER_DIR  := kernels
 
 # Files
 SRC         := $(wildcard $(SRC_DIR)/*.m)
+HEADERS     := $(wildcard $(SRC_DIR)/*.h)
 OBJ         := $(patsubst $(SRC_DIR)/%.m,$(BUILD_DIR)/%.o,$(SRC))
 LIB         := $(BUILD_DIR)/libmetalshim.a
 
 # Tools
 CC          := clang
+CF          := clang-format -style=Chromium
 AR          := ar
 CFLAGS      := -c -fobjc-arc -fmodules -I$(SRC_DIR)
 ARFLAGS     := rcs
@@ -22,9 +24,13 @@ AIR_FILES   := $(patsubst $(SHADER_DIR)/%.metal,$(BUILD_DIR)/%.air,$(SHADERS))
 METALLIBS   := $(patsubst $(SHADER_DIR)/%.metal,$(BUILD_DIR)/%.metallib,$(SHADERS))
 
 # Default target
-all: $(LIB) $(METALLIBS)
+all: format $(LIB) $(METALLIBS)
 
 kernels: $(METALLIBS)
+
+format:
+	@echo "Formatting source files with clang-format..."
+	@$(CF) -i $(SRC) $(HEADERS)
 
 # Compile Objective-C to .o
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.m | $(BUILD_DIR)
@@ -53,5 +59,5 @@ clean:
 clean-kernels:
 	rm -f $(BUILD_DIR)/*.air $(BUILD_DIR)/*.metallib
 
-.PHONY: all kernels clean-kernels clean
+.PHONY: all kernels clean-kernels format clean
 
