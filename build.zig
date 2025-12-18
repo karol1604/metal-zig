@@ -33,7 +33,7 @@ pub fn build(b: *std.Build) void {
 
     // lib.linkLibC();
     lib_mod.addCSourceFile(.{
-        .file = b.path("c-shim/metal_shim.m"),
+        .file = b.path("src/c-shim/metal_shim.m"),
         .flags = &.{"-fobjc-arc"},
     });
 
@@ -41,7 +41,7 @@ pub fn build(b: *std.Build) void {
     lib_mod.linkFramework("Foundation", .{});
     // lib_mod.linkFramework("MetalKit", .{});
     // lib_mod.linkFramework("CoreGraphics", .{});
-    lib_mod.addIncludePath(b.path("c-shim"));
+    lib_mod.addIncludePath(b.path("src/c-shim"));
     // lib_mod.addObjectFile(b.path("build-artifacts/libmetalshim.a"));
 
     // b.installArtifact(lib);
