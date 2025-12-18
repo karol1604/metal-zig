@@ -14,7 +14,7 @@ pub const MTLSize = struct {
 };
 
 pub const ComputeCommandEncoder = struct {
-    handle: *c.MTLComputeCommandEncoderHandle,
+    handle: c.MTLComputeCommandEncoderHandle,
     pub fn deinit(self: *ComputeCommandEncoder) void {
         c.mtl_release_compute_command_encoder(self.handle);
     }
@@ -49,7 +49,7 @@ pub const ComputeCommandEncoder = struct {
 };
 
 pub const CommandBuffer = struct {
-    handle: *c.MTLCommandBufferHandle,
+    handle: c.MTLCommandBufferHandle,
     pub fn deinit(self: *CommandBuffer) void {
         c.mtl_release_command_buffer(self.handle);
     }
@@ -70,7 +70,7 @@ pub const CommandBuffer = struct {
 };
 
 pub const CommandQueue = struct {
-    handle: *c.MTLCommandQueueHandle,
+    handle: c.MTLCommandQueueHandle,
     pub fn deinit(self: *CommandQueue) void {
         c.mtl_release_command_queue(self.handle);
     }
@@ -83,14 +83,14 @@ pub const CommandQueue = struct {
 };
 
 pub const Function = struct {
-    handle: *c.MTLFunctionHandle,
+    handle: c.MTLFunctionHandle,
     pub fn deinit(self: *Function) void {
         c.mtl_release_function(self.handle);
     }
 };
 
 pub const Library = struct {
-    handle: *c.MTLLibraryHandle,
+    handle: c.MTLLibraryHandle,
     pub fn deinit(self: *Library) void {
         c.mtl_release_library(self.handle);
     }
@@ -103,7 +103,7 @@ pub const Library = struct {
 };
 
 pub const ComputePipelineState = struct {
-    handle: *c.MTLComputePipelineStateHandle,
+    handle: c.MTLComputePipelineStateHandle,
     pub fn deinit(self: *ComputePipelineState) void {
         c.mtl_release_compute_pipeline_state(self.handle);
     }
@@ -114,7 +114,7 @@ pub const ComputePipelineState = struct {
 };
 
 pub const Buffer = struct {
-    handle: *c.MTLBufferHandle,
+    handle: c.MTLBufferHandle,
     len: usize,
 
     pub fn deinit(self: *Buffer) void {
@@ -136,7 +136,7 @@ pub const Buffer = struct {
 };
 
 pub const Device = struct {
-    handle: *c.MTLDeviceHandle,
+    handle: c.MTLDeviceHandle,
     pub fn systemDefault() !Device {
         const device = c.mtl_create_system_default_device();
         if (device == null) return error.NoDevice;
@@ -146,16 +146,16 @@ pub const Device = struct {
     pub fn copyAllDevices(alloc: std.mem.Allocator) ![]Device {
         const deviceCount = c.mtl_get_device_list_size();
         if (deviceCount == 0) return error.NoDevicesAvailable;
-        var devices = std.ArrayList(Device).init(alloc);
-        defer devices.deinit();
+        var devices: std.ArrayList(Device) = .empty;
+        defer devices.deinit(alloc);
 
         for (0..deviceCount) |i| {
             const device = c.mtl_get_device_at_index(i);
             if (device == null) continue; // Skip null devices
-            try devices.append(Device{ .handle = device.? });
+            try devices.append(alloc, Device{ .handle = device });
         }
 
-        return devices.toOwnedSlice();
+        return devices.toOwnedSlice(alloc);
     }
 
     pub fn name(self: *const Device) []const u8 {
@@ -167,13 +167,25 @@ pub const Device = struct {
     }
 
     pub fn newCommandQueue(self: *Device) !CommandQueue {
-        const queue = c.mtl_new_command_queue(self.handle);
+        const queue = c.mtl_new_command_queue(self.handle) orelse null;
         if (queue == null) return error.CommandQueueCreationFailed;
-        return CommandQueue{ .handle = queue.? };
+        return CommandQueue{ .handle = queue };
     }
 
     pub fn newLibraryWithURL(self: *Device, url: [*c]const u8) !Library {
         const library = c.mtl_new_library_with_url(self.handle, url);
+        if (library == null) return error.LibraryCreationFailed;
+        return Library{ .handle = library.? };
+    }
+
+    pub fn newLibraryWithData(self: *Device, data: []const u8) !Library {
+        const library = c.mtl_new_library_with_data(self.handle, @ptrCast(data));
+        if (library == null) return error.LibraryCreationFailed;
+        return Library{ .handle = library.? };
+    }
+
+    pub fn newLibraryWithSource(self: *Device, source: [*c]const u8) !Library {
+        const library = c.mtl_new_library_with_source(self.handle, source);
         if (library == null) return error.LibraryCreationFailed;
         return Library{ .handle = library.? };
     }

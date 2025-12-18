@@ -8,23 +8,39 @@ pub fn main() !void {
     for (devices, 0..) |device, i| {
         std.debug.print("Device {d}: {s}\n", .{ i, device.name() });
     }
-    // var device = try metalzig.Device.systemDefault();
-    var device = devices[0];
+    var device = try metalzig.Device.systemDefault();
+    // var device = devices[0];
     defer device.deinit();
 
     var q = try device.newCommandQueue();
     defer q.deinit();
+    //
+    // // const lib_data = @embedFile("add_arrays.metallib");
+    //
+    // var lib = try device.newLibraryWithURL("build-artifacts/add_arrays.metallib");
+    // // var lib = try device.newLibraryWithData(std.mem.sliceAsBytes(lib_data));
+    const source =
+        \\kernel void add_arrays(
+        \\               device const uint* inA [[buffer(0)]],
+        \\               device const uint* inB [[buffer(1)]],
+        \\               constant uint& offset [[buffer(2)]],
+        \\               device uint* result [[buffer(3)]],
+        \\               uint index [[thread_position_in_grid]])
+        \\{
+        \\    result[index] = inA[index] + inB[index] + offset;
+        \\}
+    ;
+    var lib = try device.newLibraryWithSource(source);
 
-    var lib = try device.newLibraryWithURL("build-artifacts/add_arrays.metallib");
     defer lib.deinit();
-
+    //
     var func = try lib.newFunctionWithName("add_arrays");
     defer func.deinit();
-
+    //
     var pipeline = try device.newComputePipelineStateWithFunction(&func);
     defer pipeline.deinit();
-
-    const input_len = 10_000_000;
+    //
+    const input_len = 10_000_00;
     const output_len = input_len;
 
     var a_buf = try device.newBufferWithLength(input_len * @sizeOf(u32), 0);
@@ -42,15 +58,16 @@ pub fn main() !void {
         a_val.* = @intCast(i);
         b_val.* = @intCast(input_len - i);
     }
-
+    std.debug.print("b_slice[100] = {d}\n", .{b_slice[100]});
+    //
     var command_buffer = try q.newCommandBuffer();
     defer command_buffer.deinit();
-
+    //
     var encoder = try command_buffer.newComputeCommandEncoder();
     defer encoder.deinit();
-
+    //
     encoder.setComputePipelineState(&pipeline);
-
+    //
     const offset: u32 = 69;
     encoder.setBuffer(&a_buf, 0, 0);
     encoder.setBuffer(&b_buf, 0, 1);
@@ -59,7 +76,7 @@ pub fn main() !void {
 
     encoder.dispatchThreads(input_len, 1, 1, 1000, 1, 1);
     encoder.endEncoding();
-
+    //
     command_buffer.commit();
     command_buffer.waitUntilCompleted();
 

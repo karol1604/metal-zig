@@ -1,0 +1,16 @@
+BasedOnStyle: LLVM
+
+ColumnLimit: 100
+
+AlignAfterOpenBracket: DontAlign
+BinPackParameters: false
+BinPackArguments: false
+AllowAllParametersOfDeclarationOnNextLine: false
+
+BreakFunctionDefinitionParameters: true
+ContinuationIndentWidth: 4
+
+ObjCBlockIndentWidth: 4
+
+PointerAlignment: Left
+DerivePointerAlignment: false

@@ -11,7 +11,7 @@ LIB         := $(BUILD_DIR)/libmetalshim.a
 
 # Tools
 CC          := clang
-CF          := clang-format -style=Chromium
+CF          := clang-format -style=file
 AR          := ar
 CFLAGS      := -c -fobjc-arc -fmodules -I$(SRC_DIR)
 ARFLAGS     := rcs
