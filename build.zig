@@ -40,6 +40,7 @@ pub fn build(b: *std.Build) void {
     lib_mod.linkFramework("Metal", .{});
     lib_mod.linkFramework("Foundation", .{});
     // lib_mod.linkFramework("MetalKit", .{});
+    // lib_mod.linkFramework("CoreGraphics", .{});
     lib_mod.addIncludePath(b.path("c-shim"));
     // lib_mod.addObjectFile(b.path("build-artifacts/libmetalshim.a"));
 

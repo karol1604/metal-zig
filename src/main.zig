@@ -8,8 +8,8 @@ pub fn main() !void {
     for (devices, 0..) |device, i| {
         std.debug.print("Device {d}: {s}\n", .{ i, device.name() });
     }
-    var device = try metalzig.Device.systemDefault();
-    // var device = devices[0];
+    // var device = try metalzig.Device.systemDefault();
+    var device = devices[0];
     defer device.deinit();
 
     var q = try device.newCommandQueue();

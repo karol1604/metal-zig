@@ -137,6 +137,7 @@ pub const Buffer = struct {
 
 pub const Device = struct {
     handle: c.MTLDeviceHandle,
+    // NOTE: this does not work on intel macs i think
     pub fn systemDefault() !Device {
         const device = c.mtl_create_system_default_device();
         if (device == null) return error.NoDevice;
