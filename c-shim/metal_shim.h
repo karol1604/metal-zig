@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stddef.h>
+#include <stdint.h>
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -16,50 +17,56 @@ typedef void* MTLComputeCommandEncoderHandle;
 typedef struct MTLSizeHandle MTLSizeHandle;
 typedef struct MTLDeviceList MTLDeviceList;
 
-#define MTLResourceCPUCacheModeShift 0
-#define MTLResourceCPUCacheModeMask (0xfUL << MTLResourceCPUCacheModeShift)
+/*#define MTLResourceCPUCacheModeShift 0*/
+/*#define MTLResourceCPUCacheModeMask (0xfUL << MTLResourceCPUCacheModeShift)*/
+/**/
+/*#define MTLResourceStorageModeShift 4*/
+/*#define MTLResourceStorageModeMask (0xfUL << MTLResourceStorageModeShift)*/
+/**/
+/*#define MTLResourceHazardTrackingModeShift 8*/
+/*#define MTLResourceHazardTrackingModeMask (0x3UL << MTLResourceHazardTrackingModeShift)*/
+/**/
+/*#define MTLCPUCacheModeDefaultCache 0*/
+/*#define MTLCPUCacheModeWriteCombined 1*/
 
-#define MTLResourceStorageModeShift 4
-#define MTLResourceStorageModeMask (0xfUL << MTLResourceStorageModeShift)
+/*typedef unsigned int MTLResourceOptionsHandle;*/
+/*enum {*/
+/*  MTLResourceCPUCacheModeDefaultCache = MTLCPUCacheModeDefaultCache <<
+ * MTLResourceCPUCacheModeShift,*/
+/*  MTLResourceCPUCacheModeWriteCombined = MTLCPUCacheModeWriteCombined*/
+/*                                         << MTLResourceCPUCacheModeShift,*/
+/**/
+/*  // TODO:  MTLStorageModeShared*/
+/*  MTLResourceStorageModeShared = 0 << MTLResourceStorageModeShift,*/
+/*  // TODO: MTLStorageModeManaged*/
+/*  MTLResourceStorageModeManaged = 1 << MTLResourceStorageModeShift,*/
+/*  // TODO: MTLStorageModePrivate*/
+/*  MTLResourceStorageModePrivate = 2 << MTLResourceStorageModeShift,*/
+/*  // TODO: MTLStorageModeMemoryless*/
+/*  MTLResourceStorageModeMemoryless = 3 << MTLResourceStorageModeShift,*/
+/**/
+/*  // TODO: MTLHazardTrackingModeDefault*/
+/*  MTLResourceHazardTrackingModeDefault = 0 << MTLResourceHazardTrackingModeShift,*/
+/*  // TODO: MTLHazardTrackingModeUntracked*/
+/*  MTLResourceHazardTrackingModeUntracked = 1 << MTLResourceHazardTrackingModeShift,*/
+/*  // TODO: MTLHazardTrackingModeTracked*/
+/*  MTLResourceHazardTrackingModeTracked = 2 << MTLResourceHazardTrackingModeShift,*/
 
-#define MTLResourceHazardTrackingModeShift 8
-#define MTLResourceHazardTrackingModeMask (0x3UL << MTLResourceHazardTrackingModeShift)
+// Deprecated spellings
+/*MTLResourceOptionCPUCacheModeDefault
+   API_DEPRECATED_WITH_REPLACEMENT("MTLResourceCPUCacheModeDefaultCache",
+   macos(10.11, 13.0), ios(8.0, 16.0)) =
+   MTLResourceCPUCacheModeDefaultCache,*/
+/*MTLResourceOptionCPUCacheModeWriteCombined
+   API_DEPRECATED_WITH_REPLACEMENT("MTLResourceCPUCacheModeWriteCombined",
+   macos(10.11, 13.0), ios(8.0, 16.0)) =
+   MTLResourceCPUCacheModeWriteCombined,*/
+/*};*/
 
-#define MTLCPUCacheModeDefaultCache 0
-#define MTLCPUCacheModeWriteCombined 1
-
-typedef unsigned int MTLResourceOptionsHandle;
-enum {
-  MTLResourceCPUCacheModeDefaultCache = MTLCPUCacheModeDefaultCache << MTLResourceCPUCacheModeShift,
-  MTLResourceCPUCacheModeWriteCombined = MTLCPUCacheModeWriteCombined
-                                         << MTLResourceCPUCacheModeShift,
-
-  // TODO:  MTLStorageModeShared
-  MTLResourceStorageModeShared = 0 << MTLResourceStorageModeShift,
-  // TODO: MTLStorageModeManaged
-  MTLResourceStorageModeManaged = 1 << MTLResourceStorageModeShift,
-  // TODO: MTLStorageModePrivate
-  MTLResourceStorageModePrivate = 2 << MTLResourceStorageModeShift,
-  // TODO: MTLStorageModeMemoryless
-  MTLResourceStorageModeMemoryless = 3 << MTLResourceStorageModeShift,
-
-  // TODO: MTLHazardTrackingModeDefault
-  MTLResourceHazardTrackingModeDefault = 0 << MTLResourceHazardTrackingModeShift,
-  // TODO: MTLHazardTrackingModeUntracked
-  MTLResourceHazardTrackingModeUntracked = 1 << MTLResourceHazardTrackingModeShift,
-  // TODO: MTLHazardTrackingModeTracked
-  MTLResourceHazardTrackingModeTracked = 2 << MTLResourceHazardTrackingModeShift,
-
-  // Deprecated spellings
-  /*MTLResourceOptionCPUCacheModeDefault
-     API_DEPRECATED_WITH_REPLACEMENT("MTLResourceCPUCacheModeDefaultCache",
-     macos(10.11, 13.0), ios(8.0, 16.0)) =
-     MTLResourceCPUCacheModeDefaultCache,*/
-  /*MTLResourceOptionCPUCacheModeWriteCombined
-     API_DEPRECATED_WITH_REPLACEMENT("MTLResourceCPUCacheModeWriteCombined",
-     macos(10.11, 13.0), ios(8.0, 16.0)) =
-     MTLResourceCPUCacheModeWriteCombined,*/
-};
+typedef uint32_t MTLResourceOptionsHandle;
+#define METAL_RESOURCE_STORAGE_MODE_SHARED 0
+#define METAL_RESOURCE_STORAGE_MODE_MANAGED (1 << 4)
+#define METAL_RESOURCE_STORAGE_MODE_PRIVATE (2 << 4)
 
 MTLDeviceHandle mtl_create_system_default_device(void);
 void mtl_release_device(MTLDeviceHandle device);

@@ -15,18 +15,7 @@ pub fn build(b: *std.Build) void {
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
-    // We will also create a module for our other entry point, 'main.zig'.
-    const exe_mod = b.createModule(.{
-        // `root_source_file` is the Zig "entry point" of the module. If a module
-        // only contains e.g. external object files, you can make this `null`.
-        // In this case the main source file is merely a path, however, in more
-        // complicated build scripts, this could be a generated file.
-        .root_source_file = b.path("src/main.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-
-    const lib_mod = b.createModule(.{
+    const lib_mod = b.addModule("metalzig", .{
         // `root_source_file` is the Zig "entry point" of the module. If a module
         // only contains e.g. external object files, you can make this `null`.
         // In this case the main source file is merely a path, however, in more
@@ -36,22 +25,46 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    exe_mod.addImport("metalzig", lib_mod);
+    // const lib = b.addLibrary(.{
+    //     .linkage = .static,
+    //     .name = "metalzig",
+    //     .root_module = lib_mod,
+    // });
 
-    const lib = b.addLibrary(.{
-        .linkage = .static,
-        .name = "metalzig",
-        .root_module = lib_mod,
+    // lib.linkLibC();
+    lib_mod.addCSourceFile(.{
+        .file = b.path("c-shim/metal_shim.m"),
+        .flags = &.{"-fobjc-arc"},
     });
 
-    lib.linkLibC();
-    lib.linkFramework("Metal");
-    lib.linkFramework("Foundation");
-    lib.linkFramework("MetalKit");
-    lib.addIncludePath(b.path("c-shim"));
-    lib.addObjectFile(b.path("build-artifacts/libmetalshim.a"));
+    lib_mod.linkFramework("Metal", .{});
+    lib_mod.linkFramework("Foundation", .{});
+    // lib_mod.linkFramework("MetalKit", .{});
+    lib_mod.addIncludePath(b.path("c-shim"));
+    // lib_mod.addObjectFile(b.path("build-artifacts/libmetalshim.a"));
 
-    b.installArtifact(lib);
+    // b.installArtifact(lib);
+
+    // We will also create a module for our other entry point, 'main.zig'.
+    const exe_mod = b.createModule(.{
+        // `root_source_file` is the Zig "entry point" of the module. If a module
+        // only contains e.g. external object files, you can make this `null`.
+        // In this case the main source file is merely a path, however, in more
+        // complicated build scripts, this could be a generated file.
+        .root_source_file = b.path("src/main.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            // Here "metal_bindings" is the name you will use in your source code to
+            // import this module (e.g. `@import("metal_bindings")`). The name is
+            // repeated because you are allowed to rename your imports, which
+            // can be extremely useful in case of collisions (which can happen
+            // importing modules from different packages).
+            .{ .name = "metalzig", .module = lib_mod },
+        },
+    });
+
+    // exe_mod.addImport("metalzig", lib_mod);
 
     // This creates another `std.Build.Step.Compile`, but this one builds an executable
     // rather than a static library.

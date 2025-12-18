@@ -1,7 +1,5 @@
 #import "metal_shim.h"
-#include <CoreFoundation/CFBase.h>
 #import <Foundation/Foundation.h>
-#include <Foundation/NSObjCRuntime.h>
 #import <Metal/Metal.h>
 
 struct MTLSizeHandle {

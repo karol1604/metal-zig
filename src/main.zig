@@ -40,7 +40,7 @@ pub fn main() !void {
     var pipeline = try device.newComputePipelineStateWithFunction(&func);
     defer pipeline.deinit();
     //
-    const input_len = 10_000_00;
+    const input_len = 10_000_000;
     const output_len = input_len;
 
     var a_buf = try device.newBufferWithLength(input_len * @sizeOf(u32), 0);
