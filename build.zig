@@ -1,123 +1,95 @@
 const std = @import("std");
 
-// Although this function looks imperative, note that its job is to
-// declaratively construct a build graph that will be executed by an external
-// runner.
 pub fn build(b: *std.Build) void {
-    // Standard target options allows the person running `zig build` to choose
-    // what target to build for. Here we do not override the defaults, which
-    // means any target is allowed, and the default is native. Other options
-    // for restricting supported target set are available.
     const target = b.standardTargetOptions(.{});
-
-    // Standard optimization options allow the person running `zig build` to select
-    // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall. Here we do not
-    // set a preferred release mode, allowing the user to decide how to optimize.
+    if (target.result.os.tag != .macos) {
+        @panic("metal-zig currently supports macOS targets only");
+    }
     const optimize = b.standardOptimizeOption(.{});
 
-    const lib_mod = b.addModule("metalzig", .{
-        // `root_source_file` is the Zig "entry point" of the module. If a module
-        // only contains e.g. external object files, you can make this `null`.
-        // In this case the main source file is merely a path, however, in more
-        // complicated build scripts, this could be a generated file.
+    const metalzig = b.addModule("metalzig", .{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
         .optimize = optimize,
     });
+    configureMetalModule(b, metalzig);
 
-    // const lib = b.addLibrary(.{
-    //     .linkage = .static,
-    //     .name = "metalzig",
-    //     .root_module = lib_mod,
-    // });
-
-    // lib.linkLibC();
-    lib_mod.addCSourceFile(.{
-        .file = b.path("src/c-shim/metal_shim.m"),
-        .flags = &.{"-fobjc-arc"},
-    });
-
-    lib_mod.linkFramework("Metal", .{});
-    lib_mod.linkFramework("Foundation", .{});
-    // lib_mod.linkFramework("MetalKit", .{});
-    // lib_mod.linkFramework("CoreGraphics", .{});
-    lib_mod.addIncludePath(b.path("src/c-shim"));
-    // lib_mod.addObjectFile(b.path("build-artifacts/libmetalshim.a"));
-
-    // b.installArtifact(lib);
-
-    // We will also create a module for our other entry point, 'main.zig'.
-    const exe_mod = b.createModule(.{
-        // `root_source_file` is the Zig "entry point" of the module. If a module
-        // only contains e.g. external object files, you can make this `null`.
-        // In this case the main source file is merely a path, however, in more
-        // complicated build scripts, this could be a generated file.
+    const example_module = b.createModule(.{
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
         .imports = &.{
-            // Here "metal_bindings" is the name you will use in your source code to
-            // import this module (e.g. `@import("metal_bindings")`). The name is
-            // repeated because you are allowed to rename your imports, which
-            // can be extremely useful in case of collisions (which can happen
-            // importing modules from different packages).
-            .{ .name = "metalzig", .module = lib_mod },
+            .{ .name = "metalzig", .module = metalzig },
         },
     });
-
-    // exe_mod.addImport("metalzig", lib_mod);
-
-    // This creates another `std.Build.Step.Compile`, but this one builds an executable
-    // rather than a static library.
-    const exe = b.addExecutable(.{
+    const example = b.addExecutable(.{
         .name = "metal_zig",
-        .root_module = exe_mod,
+        .root_module = example_module,
     });
+    b.installArtifact(example);
 
-    // This declares intent for the executable to be installed into the
-    // standard location when the user invokes the "install" step (the default
-    // step when running `zig build`).
-    b.installArtifact(exe);
-
-    // This *creates* a Run step in the build graph, to be executed when another
-    // step is evaluated that depends on it. The next line below will establish
-    // such a dependency.
-    const run_cmd = b.addRunArtifact(exe);
-
-    // By making the run step depend on the install step, it will be run from the
-    // installation directory rather than directly from within the cache directory.
-    // This is not necessary, however, if the application depends on other installed
-    // files, this ensures they will be present and in the expected location.
-    run_cmd.step.dependOn(b.getInstallStep());
-
-    // This allows the user to pass arguments to the application in the build
-    // command itself, like this: `zig build run -- arg1 arg2 etc`
+    const run_example = b.addRunArtifact(example);
+    run_example.step.dependOn(b.getInstallStep());
     if (b.args) |args| {
-        run_cmd.addArgs(args);
+        run_example.addArgs(args);
     }
+    const run_step = b.step("run", "Run the compute example");
+    run_step.dependOn(&run_example.step);
 
-    // This creates a build step. It will be visible in the `zig build --help` menu,
-    // and can be selected like this: `zig build run`
-    // This will evaluate the `run` step rather than the default, which is "install".
-    const run_step = b.step("run", "Run the app");
-    run_step.dependOn(&run_cmd.step);
+    addKernelStep(b);
 
-    const lib_unit_tests = b.addTest(.{
-        .root_module = lib_mod,
+    // Keep the test build step available for when tests are added.
+    const library_tests = b.addTest(.{ .root_module = metalzig });
+    const run_library_tests = b.addRunArtifact(library_tests);
+    const example_tests = b.addTest(.{ .root_module = example_module });
+    const run_example_tests = b.addRunArtifact(example_tests);
+    const test_step = b.step("test", "Run tests");
+    test_step.dependOn(&run_library_tests.step);
+    test_step.dependOn(&run_example_tests.step);
+}
+
+fn configureMetalModule(b: *std.Build, module: *std.Build.Module) void {
+    const sdk_root = b.sysroot orelse std.mem.trim(
+        u8,
+        b.run(&.{ "xcrun", "--sdk", "macosx", "--show-sdk-path" }),
+        &std.ascii.whitespace,
+    );
+    module.addSystemFrameworkPath(.{
+        .cwd_relative = b.pathJoin(&.{ sdk_root, "System/Library/Frameworks" }),
     });
-
-    const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
-
-    const exe_unit_tests = b.addTest(.{
-        .root_module = exe_mod,
+    module.addCSourceFile(.{
+        .file = b.path("src/c-shim/metal_shim.m"),
+        .flags = &.{"-fobjc-arc"},
     });
+    module.addIncludePath(b.path("src/c-shim"));
+    module.linkFramework("Metal", .{});
+    module.linkFramework("Foundation", .{});
+    module.linkFramework("QuartzCore", .{});
+}
 
-    const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
+fn addKernelStep(b: *std.Build) void {
+    const compile_air = b.addSystemCommand(&.{
+        "xcrun",
+        "-sdk",
+        "macosx",
+        "metal",
+        "-c",
+    });
+    compile_air.addFileArg(b.path("kernels/add_arrays.metal"));
+    compile_air.addArg("-o");
+    const air = compile_air.addOutputFileArg("add_arrays.air");
 
-    // Similar to creating the run step earlier, this exposes a `test` step to
-    // the `zig build --help` menu, providing a way for the user to request
-    // running the unit tests.
-    const test_step = b.step("test", "Run unit tests");
-    test_step.dependOn(&run_exe_unit_tests.step);
-    test_step.dependOn(&run_lib_unit_tests.step);
+    const link_library = b.addSystemCommand(&.{
+        "xcrun",
+        "-sdk",
+        "macosx",
+        "metallib",
+    });
+    link_library.addFileArg(air);
+    link_library.addArg("-o");
+    const metallib = link_library.addOutputFileArg("add_arrays.metallib");
+
+    const install_metallib = b.addInstallFile(metallib, "lib/add_arrays.metallib");
+    const kernels_step = b.step("kernels", "Compile and install Metal kernels");
+    kernels_step.dependOn(&install_metallib.step);
 }

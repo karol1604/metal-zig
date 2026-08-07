@@ -1,205 +1,68 @@
-const std = @import("std");
-const c = @cImport({
-    @cInclude("metal_shim.h");
-});
+pub const ErrorInfo = @import("error_info.zig").ErrorInfo;
 
-pub const MTLSize = struct {
-    width: usize,
-    height: usize,
-    depth: usize,
+const resource = @import("resource.zig");
+pub const Buffer = resource.Buffer;
+pub const BufferContentsError = resource.BufferContentsError;
+pub const BufferRangeError = resource.BufferRangeError;
+pub const CpuCacheMode = resource.CpuCacheMode;
+pub const StorageMode = resource.StorageMode;
+pub const HazardTrackingMode = resource.HazardTrackingMode;
+pub const ResourceOptions = resource.ResourceOptions;
 
-    pub fn init(width: usize, height: usize, depth: usize) MTLSize {
-        return MTLSize{ .width = width, .height = height, .depth = depth };
-    }
-};
+const texture = @import("texture.zig");
+pub const PixelFormat = texture.PixelFormat;
+pub const TextureType = texture.TextureType;
+pub const TextureUsage = texture.TextureUsage;
+pub const TextureDescriptor = texture.TextureDescriptor;
+pub const TextureRegion = texture.Region;
+pub const Texture = texture.Texture;
+pub const SamplerMinMagFilter = texture.SamplerMinMagFilter;
+pub const SamplerMipFilter = texture.SamplerMipFilter;
+pub const SamplerAddressMode = texture.SamplerAddressMode;
+pub const SamplerDescriptor = texture.SamplerDescriptor;
+pub const SamplerState = texture.SamplerState;
 
-pub const ComputeCommandEncoder = struct {
-    handle: c.MTLComputeCommandEncoderHandle,
-    pub fn deinit(self: *ComputeCommandEncoder) void {
-        c.mtl_release_compute_command_encoder(self.handle);
-    }
+const library = @import("library.zig");
+pub const Function = library.Function;
+pub const Library = library.Library;
+pub const ComputePipelineState = library.ComputePipelineState;
 
-    pub fn setComputePipelineState(self: *ComputeCommandEncoder, pipeline: *ComputePipelineState) void {
-        c.mtl_enc_set_compute_pipeline_state(self.handle, pipeline.handle);
-    }
+const render = @import("render.zig");
+pub const VertexFormat = render.VertexFormat;
+pub const VertexStepFunction = render.VertexStepFunction;
+pub const VertexAttributeDescriptor = render.VertexAttributeDescriptor;
+pub const VertexBufferLayoutDescriptor = render.VertexBufferLayoutDescriptor;
+pub const VertexDescriptor = render.VertexDescriptor;
+pub const BlendFactor = render.BlendFactor;
+pub const BlendOperation = render.BlendOperation;
+pub const ColorWriteMask = render.ColorWriteMask;
+pub const ColorAttachmentDescriptor = render.ColorAttachmentDescriptor;
+pub const RenderPipelineDescriptor = render.RenderPipelineDescriptor;
+pub const RenderPipelineState = render.RenderPipelineState;
+pub const LoadAction = render.LoadAction;
+pub const StoreAction = render.StoreAction;
+pub const ClearColor = render.ClearColor;
+pub const RenderPassDescriptor = render.RenderPassDescriptor;
+pub const Viewport = render.Viewport;
+pub const ScissorRect = render.ScissorRect;
+pub const PrimitiveType = render.PrimitiveType;
+pub const IndexType = render.IndexType;
 
-    pub fn setBuffer(self: *ComputeCommandEncoder, buffer: *Buffer, offset: usize, index: u32) void {
-        c.mtl_enc_set_buffer(self.handle, buffer.handle, @intCast(offset), @intCast(index));
-    }
+const commands = @import("commands.zig");
+pub const Size = commands.Size;
+pub const MTLSize = Size;
+pub const ComputeCommandEncoder = commands.ComputeCommandEncoder;
+pub const RenderCommandEncoder = commands.RenderCommandEncoder;
+pub const CommandBufferStatus = commands.CommandBufferStatus;
+pub const CommandBufferCompletionFn = commands.CommandBufferCompletionFn;
+pub const CommandBuffer = commands.CommandBuffer;
+pub const CommandQueue = commands.CommandQueue;
 
-    pub fn setBytes(self: *ComputeCommandEncoder, bytes: []const u8, index: u32) void {
-        c.mtl_enc_set_bytes(self.handle, @intCast(index), @intCast(bytes.len), @ptrCast(bytes.ptr));
-    }
+const surface = @import("surface.zig");
+pub const DrawableSize = surface.DrawableSize;
+pub const MetalLayer = surface.MetalLayer;
+pub const Drawable = surface.Drawable;
 
-    pub fn dispatchThreads(self: *ComputeCommandEncoder, threadsPerGridX: usize, threadsPerGridY: usize, threadsPerGridZ: usize, threadsPerThreadgroupX: usize, threadsPerThreadgroupY: usize, threadsPerThreadgroupZ: usize) void {
-        c.mtl_enc_dispatch_threads(
-            self.handle,
-            @intCast(threadsPerGridX),
-            @intCast(threadsPerGridY),
-            @intCast(threadsPerGridZ),
-            @intCast(threadsPerThreadgroupX),
-            @intCast(threadsPerThreadgroupY),
-            @intCast(threadsPerThreadgroupZ),
-        );
-    }
-
-    pub fn endEncoding(self: *ComputeCommandEncoder) void {
-        c.mtl_end_encoding(self.handle);
-    }
-};
-
-pub const CommandBuffer = struct {
-    handle: c.MTLCommandBufferHandle,
-    pub fn deinit(self: *CommandBuffer) void {
-        c.mtl_release_command_buffer(self.handle);
-    }
-
-    pub fn newComputeCommandEncoder(self: *CommandBuffer) !ComputeCommandEncoder {
-        const encoder = c.mtl_new_compute_command_encoder(self.handle);
-        if (encoder == null) return error.ComputeCommandEncoderCreationFailed;
-        return ComputeCommandEncoder{ .handle = encoder.? };
-    }
-
-    pub fn commit(self: *CommandBuffer) void {
-        c.mtl_command_buffer_commit(self.handle);
-    }
-
-    pub fn waitUntilCompleted(self: *CommandBuffer) void {
-        c.mtl_command_buffer_wait_until_completed(self.handle);
-    }
-};
-
-pub const CommandQueue = struct {
-    handle: c.MTLCommandQueueHandle,
-    pub fn deinit(self: *CommandQueue) void {
-        c.mtl_release_command_queue(self.handle);
-    }
-
-    pub fn newCommandBuffer(self: *CommandQueue) !CommandBuffer {
-        const command_buffer = c.mtl_new_command_buffer(self.handle);
-        if (command_buffer == null) return error.CommandBufferCreationFailed;
-        return CommandBuffer{ .handle = command_buffer.? };
-    }
-};
-
-pub const Function = struct {
-    handle: c.MTLFunctionHandle,
-    pub fn deinit(self: *Function) void {
-        c.mtl_release_function(self.handle);
-    }
-};
-
-pub const Library = struct {
-    handle: c.MTLLibraryHandle,
-    pub fn deinit(self: *Library) void {
-        c.mtl_release_library(self.handle);
-    }
-
-    pub fn newFunctionWithName(self: *Library, name: [*c]const u8) !Function {
-        const function = c.mtl_new_function_with_name(self.handle, name);
-        if (function == null) return error.FunctionCreationFailed;
-        return Function{ .handle = function.? };
-    }
-};
-
-pub const ComputePipelineState = struct {
-    handle: c.MTLComputePipelineStateHandle,
-    pub fn deinit(self: *ComputePipelineState) void {
-        c.mtl_release_compute_pipeline_state(self.handle);
-    }
-
-    pub fn getMaxTotalThreadsPerThreadgroup(self: *ComputePipelineState) usize {
-        return c.mtl_get_maxTotalThreadsPerThreadgroup(self.handle);
-    }
-};
-
-pub const Buffer = struct {
-    handle: c.MTLBufferHandle,
-    len: usize,
-
-    pub fn deinit(self: *Buffer) void {
-        c.mtl_release_buffer(self.handle);
-    }
-
-    /// Returns the buffer contents as a slice of bytes.
-    pub fn getContents(self: *Buffer) ?[]u8 {
-        const contents: [*]u8 = @ptrCast(c.mtl_buffer_get_contents(self.handle));
-        // if (contents == null) return null;
-        return contents[0..self.len];
-    }
-
-    /// Returns the buffer contents as a slice of type `T`.
-    pub fn getContentsAs(self: *Buffer, comptime T: type) ?[]T {
-        const contents = self.getContents() orelse return null;
-        return @alignCast(std.mem.bytesAsSlice(T, contents));
-    }
-};
-
-pub const Device = struct {
-    handle: c.MTLDeviceHandle,
-    // NOTE: this does not work on intel macs i think
-    pub fn systemDefault() !Device {
-        const device = c.mtl_create_system_default_device();
-        if (device == null) return error.NoDevice;
-        return Device{ .handle = device.? };
-    }
-
-    pub fn copyAllDevices(alloc: std.mem.Allocator) ![]Device {
-        const deviceCount = c.mtl_get_device_list_size();
-        if (deviceCount == 0) return error.NoDevicesAvailable;
-        var devices: std.ArrayList(Device) = .empty;
-        defer devices.deinit(alloc);
-
-        for (0..deviceCount) |i| {
-            const device = c.mtl_get_device_at_index(i);
-            if (device == null) continue; // Skip null devices
-            try devices.append(alloc, Device{ .handle = device });
-        }
-
-        return devices.toOwnedSlice(alloc);
-    }
-
-    pub fn name(self: *const Device) []const u8 {
-        return std.mem.span(c.mtl_get_device_name(self.handle));
-    }
-
-    pub fn deinit(self: *Device) void {
-        c.mtl_release_device(self.handle);
-    }
-
-    pub fn newCommandQueue(self: *Device) !CommandQueue {
-        const queue = c.mtl_new_command_queue(self.handle) orelse null;
-        if (queue == null) return error.CommandQueueCreationFailed;
-        return CommandQueue{ .handle = queue };
-    }
-
-    pub fn newLibraryWithURL(self: *Device, url: [*c]const u8) !Library {
-        const library = c.mtl_new_library_with_url(self.handle, url);
-        if (library == null) return error.LibraryCreationFailed;
-        return Library{ .handle = library.? };
-    }
-
-    pub fn newLibraryWithData(self: *Device, data: []const u8) !Library {
-        const library = c.mtl_new_library_with_data(self.handle, @ptrCast(data));
-        if (library == null) return error.LibraryCreationFailed;
-        return Library{ .handle = library.? };
-    }
-
-    pub fn newLibraryWithSource(self: *Device, source: [*c]const u8) !Library {
-        const library = c.mtl_new_library_with_source(self.handle, source);
-        if (library == null) return error.LibraryCreationFailed;
-        return Library{ .handle = library.? };
-    }
-
-    pub fn newComputePipelineStateWithFunction(self: *Device, function: *Function) !ComputePipelineState {
-        const pipeline = c.mtl_new_compute_pipeline_state_with_function(self.handle, function.handle);
-        if (pipeline == null) return error.PipelineCreationFailed;
-        return ComputePipelineState{ .handle = pipeline.? };
-    }
-
-    pub fn newBufferWithLength(self: *Device, length: usize, options: c.MTLResourceOptionsHandle) !Buffer {
-        const buffer = c.mtl_new_buffer_with_length(self.handle, @intCast(length), options);
-        if (buffer == null) return error.BufferCreationFailed;
-        return Buffer{ .handle = buffer.?, .len = length };
-    }
-};
+const device = @import("device.zig");
+pub const Device = device.Device;
+pub const DeviceList = device.DeviceList;
